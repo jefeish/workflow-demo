@@ -52,3 +52,5 @@ jobs:
             git commit -m "Update Runbook Changelog"
             git push
           fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
