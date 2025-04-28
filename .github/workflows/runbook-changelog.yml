@@ -1,0 +1,52 @@
+name: Generate Runbook Changelog
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**/*.md'
+      - 'docs/_sidebar.md'
+
+jobs:
+  generate-changelog:
+    name: Generate Runbook Changelog
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install Dependencies
+        run: npm install js-yaml
+
+      - name: Generate Changelog
+        run: |
+          # Extract referenced files from _sidebar.md
+          referenced_files=$(grep -oP '\((\.\/docs\/.*?\.md)\)' docs/_sidebar.md | tr -d '()')
+
+          # Initialize changelog content
+          echo "# Runbook Changelog" > CHANGELOG.md
+          echo "Generated on $(date)" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+
+          # Check for changes in referenced files
+          for file in $referenced_files; do
+            if git diff --name-only HEAD^ HEAD | grep -q "$file"; then
+              echo "- Updated: $file" >> CHANGELOG.md
+            fi
+          done
+
+          # Commit changelog if there are changes
+          if [ -s CHANGELOG.md ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add CHANGELOG.md
+            git commit -m "Update Runbook Changelog"
+            git push
+          fi
